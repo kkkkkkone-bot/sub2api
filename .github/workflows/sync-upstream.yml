@@ -1,0 +1,40 @@
+# 上游自动同步：逻辑在 .github/upstream-sync/sync.sh（改逻辑不用动这个文件）
+name: Sync upstream
+
+on:
+  schedule:
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "release=最新正式版（推荐）；main=上游 main"
+        type: choice
+        options:
+          - release
+          - main
+        default: release
+      dry_run:
+        description: "只检查、不推送"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Sync upstream
+        env:
+          MODE: ${{ github.event.inputs.mode || 'release' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+          GH_TOKEN: ${{ github.token }}
+        run: bash .github/upstream-sync/sync.sh
